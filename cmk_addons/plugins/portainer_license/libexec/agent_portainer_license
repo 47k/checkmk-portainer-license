@@ -1,0 +1,147 @@
+#!/usr/bin/env python3
+
+import argparse
+import requests
+import time
+import math
+from datetime import datetime
+from pathlib import Path
+from cmk.utils.password_store import lookup, replace_passwords
+
+def get_jwt(base_url, username, password, timeout, verify):
+    auth_url = f"{base_url.rstrip('/')}/api/auth"
+    payloads = (
+        {"username": username, "password": password},
+        {"Username": username, "Password": password},
+    )
+
+    last_error = None
+    for payload in payloads:
+        r = requests.post(
+            auth_url,
+            json=payload,
+            timeout=timeout,
+            verify=verify,
+        )
+        if r.ok:
+            return r.json().get("jwt")
+        last_error = r
+        # Portainer can answer with validation errors for an unexpected payload schema.
+        if r.status_code != 422:
+            break
+
+    if last_error is None:
+        raise RuntimeError("Authentication request failed before receiving a response")
+
+    details = ""
+    try:
+        details_json = last_error.json()
+        details = f" | details={details_json}"
+    except Exception:
+        body = last_error.text.strip()
+        if body:
+            details = f" | body={body}"
+
+    raise requests.HTTPError(
+        f"{last_error.status_code} {last_error.reason} for url: {auth_url}{details}",
+        response=last_error,
+    )
+
+def get_license(base_url, jwt, timeout, verify):
+    r = requests.get(
+        f"{base_url.rstrip('/')}/api/licenses",
+        headers={"Authorization": f"Bearer {jwt}"},
+        timeout=timeout,
+        verify=verify,
+    )
+    r.raise_for_status()
+    return r.json()
+
+def get_endpoints(base_url, jwt, timeout, verify):
+    r = requests.get(
+        f"{base_url.rstrip('/')}/api/endpoints",
+        headers={"Authorization": f"Bearer {jwt}"},
+        timeout=timeout,
+        verify=verify,
+    )
+    r.raise_for_status()
+    return r.json()
+
+
+def resolve_password_reference(raw_password: str) -> str:
+    # New server-side-calls Secret handling passes "<id>:<password_store_path>".
+    # Resolve it here, while still supporting plain text passwords.
+    if ":" not in raw_password:
+        return raw_password
+
+    pw_id, pw_file = raw_password.split(":", 1)
+    if not pw_id or not pw_file.startswith("/"):
+        return raw_password
+
+    path = Path(pw_file)
+    if not path.exists():
+        return raw_password
+
+    return lookup(path, pw_id)
+
+def main():
+    # Resolve password-store references in argv before parsing.
+    replace_passwords()
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--url", required=True)
+    parser.add_argument("--username", required=True)
+    parser.add_argument("--password", required=True)
+    parser.add_argument("--timeout", type=int, default=10)
+    parser.add_argument("--insecure", action="store_true")
+    args = parser.parse_args()
+
+    password = resolve_password_reference(args.password)
+
+    verify = not args.insecure
+
+    print("<<<portainer_license>>>")
+
+    start_time = time.time()
+
+    try:
+        jwt = get_jwt(args.url, args.username, password, args.timeout, verify)
+        if not jwt:
+            print("error|login_failed")
+            return
+
+        data = get_license(args.url, jwt, args.timeout, verify)
+        endpoints = get_endpoints(args.url, jwt, args.timeout, verify)
+        used_nodes = len(endpoints)
+
+        runtime = round(time.time() - start_time, 3)
+
+        if not isinstance(data, list) or not data:
+            print(f"error|no_license|{runtime}")
+            return
+
+        license_info = data[0]
+
+        expires_at = license_info.get("expiresAt")
+        company = license_info.get("company", "Unknown")
+        nodes = license_info.get("nodes", "N/A")
+
+        if not expires_at:
+            print(f"error|no_expiry|{runtime}")
+            return
+
+        now = int(time.time())
+        days_left = math.ceil((expires_at - now) / 86400)
+
+        expiry_dt = datetime.fromtimestamp(expires_at)
+        expiry_str = expiry_dt.strftime("%Y-%m-%d %H:%M")
+
+        print(f"valid|{days_left}|{expiry_str}|{company}|{nodes}|{used_nodes}|{runtime}")
+
+    except Exception as e:
+        runtime = round(time.time() - start_time, 3)
+        print(f"error|{str(e)}|{runtime}")
+        return
+
+if __name__ == "__main__":
+    main()

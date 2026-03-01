@@ -134,6 +134,9 @@ curl -k -X POST https://portainer.example.com/api/auth   -H "Content-Type: appli
 
 ---
 
+## Screenshot(s) ##
+<img width="1041" height="155" alt="Screenshot" src="https://github.com/user-attachments/assets/345293ec-6d4b-42cf-aa95-eaedb2edfbc2" />
+
 ## Error Handling
 
 CRIT is returned if:

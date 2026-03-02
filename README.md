@@ -48,6 +48,12 @@ Compatible with:
 
 ---
 
+## Prerequisites ##
+
+Portainer User with Admin rights is necessary
+
+---
+
 ## Installation (MKP – Recommended)
 
 1. Download the `.mkp` file from the Releases section.

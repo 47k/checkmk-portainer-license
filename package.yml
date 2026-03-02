@@ -1,6 +1,6 @@
 name: portainer_license
 title: Portainer License Monitoring
-version: 0.1.0
+version: 0.1.1
 author: Manuel "Overlord" Michalski <www.47k.de>
 description: Checkmk special agent for monitoring Portainer license expiry and node usage via API.
 license: Apache-2.0

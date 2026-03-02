@@ -60,7 +60,7 @@ Portainer User with Admin rights is necessary
 2. Install:
 
 ```bash
-mkp add portainer_license-0.1.0.mkp
+mkp add portainer_license-0.1.3.mkp
 mkp enable portainer_license
 omd restart
 ```
@@ -145,6 +145,7 @@ curl -k -X POST https://portainer.example.com/api/auth   -H "Content-Type: appli
 <img width="771" height="114" alt="Screenshot_Parameters" src="https://github.com/user-attachments/assets/ea5a2196-7a59-4a35-bc85-85caa54cc4e1" />
 <img width="674" height="1507" alt="Screenshot_Perfdata" src="https://github.com/user-attachments/assets/0710a7f1-f54d-47f8-85ac-7ca18d681046" />
 
+---
 
 ## Error Handling
 

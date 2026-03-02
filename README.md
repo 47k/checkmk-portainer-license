@@ -136,6 +136,9 @@ curl -k -X POST https://portainer.example.com/api/auth   -H "Content-Type: appli
 
 ## Screenshot(s) ##
 <img width="1041" height="155" alt="Screenshot" src="https://github.com/user-attachments/assets/345293ec-6d4b-42cf-aa95-eaedb2edfbc2" />
+<img width="771" height="114" alt="Screenshot_Parameters" src="https://github.com/user-attachments/assets/ea5a2196-7a59-4a35-bc85-85caa54cc4e1" />
+<img width="674" height="1507" alt="Screenshot_Perfdata" src="https://github.com/user-attachments/assets/0710a7f1-f54d-47f8-85ac-7ca18d681046" />
+
 
 ## Error Handling
 
